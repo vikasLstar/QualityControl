@@ -63,7 +63,6 @@ class PulseHeightPerChamber final : public TaskInterface
   void buildChamberIgnoreBP();
   bool isChamberToBeIgnored(unsigned int sm, unsigned int stack, unsigned int layer);
 
-
  private:
   //limits
   bool mSkipSharedDigits;
@@ -75,6 +74,8 @@ class PulseHeightPerChamber final : public TaskInterface
   std::shared_ptr<TH1F> mDigitsPerEvent;
   std::shared_ptr<TH2F> mDigitsSizevsTrackletSize;
   std::shared_ptr<TProfile> mPulseHeightpro = nullptr;
+  std::shared_ptr<TProfile> mPulseHeightpro_conc = nullptr;
+  std::shared_ptr<TProfile> mPulseHeightpro_ths = nullptr;
   std::shared_ptr<TH1F> mPulseHeight = nullptr;
 
 // information pulled from ccdb

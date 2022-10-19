@@ -1,19 +1,3 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
-// All rights not expressly granted are reserved.
-//
-// This software is distributed under the terms of the GNU General Public
-// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
-//
-// In applying this license CERN does not waive the privileges and immunities
-// granted to it by virtue of its status as an Intergovernmental Organization
-// or submit itself to any jurisdiction.
-
-///
-/// \file   PulseHeightPerChamber.cxx
-/// \author My Name
-///
-
 #include <TCanvas.h>
 #include <TH1.h>
 #include <TH2.h>
@@ -38,13 +22,12 @@
 #include <map>
 #include <tuple>
 #include "CCDB/BasicCCDBManager.h"
-
 namespace o2::quality_control_modules::trd
 {
-
 PulseHeightPerChamber::~PulseHeightPerChamber()
 {
 }
+  
 void PulseHeightPerChamber::retrieveCCDBSettings()
 {
   if (auto param = mCustomParameters.find("ccdbtimestamp"); param != mCustomParameters.end()) {
@@ -66,7 +49,7 @@ void PulseHeightPerChamber::retrieveCCDBSettings()
   }
 }
 
-  void PulseHeightPerChamber::buildChamberIgnoreBP()
+void PulseHeightPerChamber::buildChamberIgnoreBP()
 {
   mChambersToIgnoreBP.reset();
   // Vector of string to save tokens
@@ -107,28 +90,49 @@ void PulseHeightPerChamber::drawLinesOnPulseHeight(TH1F* h)
   h->GetListOfFunctions()->Add(lmin);
   h->GetListOfFunctions()->Add(lmax);
 }
-
-  void PulseHeightPerChamber::buildHistograms()
-  {
+  
+void PulseHeightPerChamber::buildHistograms()
+{
+  //mDigitHCID.reset(new TH1F("digithcid", "Digit distribution over Halfchambers", 1080, 0, 1080));
+  //getObjectsManager()->startPublishing(mDigitHCID.get());
   mDigitsPerEvent.reset(new TH1F("digitsperevent", "Digits per Event", 10000, 0, 10000));
   getObjectsManager()->startPublishing(mDigitsPerEvent.get());
 
   mDigitsSizevsTrackletSize.reset(new TH2F("digitsvstracklets", "Tracklets Count vs Digits Count per event; Number of Tracklets;Number Of Digits", 2500, 0, 2500, 2500, 0, 2500));
   getObjectsManager()->startPublishing(mDigitsSizevsTrackletSize.get());
 
-  mPulseHeight.reset(new TH1F("PulseHeight/mPulseHeight", Form("Pulse height plot threshold:%i;Timebins;Counts", mPulseHeightThreshold), 30, -0.5, 29.5));
-  drawLinesOnPulseHeight(mPulseHeight.get());
-  getObjectsManager()->startPublishing(mPulseHeight.get());
-  mPulseHeight.get()->GetYaxis()->SetTickSize(0.01);
-
   mPulseHeightpro.reset(new TProfile("PulseHeight/mPulseHeightpro", "Pulse height profile  plot;Timebins;Counts", 30, -0.5, 29.5));
   mPulseHeightpro.get()->Sumw2();
   getObjectsManager()->startPublishing(mPulseHeightpro.get());
+
+  mPulseHeightpro_ths.reset(new TProfile("PulseHeight/mPulseHeightpro_ths", "Pulse height profile  plot_with_threshold;Timebins;Counts", 30, -0.5, 29.5));
+  mPulseHeightpro_ths.get()->Sumw2();
+  getObjectsManager()->startPublishing(mPulseHeightpro_ths.get());
+
+   mPulseHeightpro_conc.reset(new TProfile("PulseHeight/mPulseHeightpro_conc", "Pulse height profile  plot_with_consecutive;Timebins;Counts", 30, -0.5, 29.5));
+  mPulseHeightpro_conc.get()->Sumw2();
+  getObjectsManager()->startPublishing(mPulseHeightpro_conc.get());
+
+  /*  int cn = 0;
+  int sm = 0;
+
+  for (int count = 0; count < 540; ++count) {
+    sm = count / 30;
+    std::string label = fmt::format("PulseHeightPerChamber/pulseheight_{0:02d}_{1}_{2}", sm, cn / 6, cn % 6);
+    std::string title = fmt::format("{0:02d}_{1}_{2};Timebin;Chamber", sm, cn / 6, cn % 6);
+    TH1F* h = new TH1F(label.c_str(), title.c_str(), 30, -0.5, 29.5);
+    mPulseHeightPerChamber_1D[count].reset(h);
+    getObjectsManager()->startPublishing(h);
+    cn++;
+    if (cn > 29)
+      cn = 0;
+  }
+*/
 }
-  
+
 void PulseHeightPerChamber::initialize(o2::framework::InitContext& /*ctx*/)
 {
-  ILOG(Info) << "initialize PulseHeightPerChamberTask" << ENDM; // QcInfoLogger is used. FairMQ logs will go to there as well.
+  ILOG(Info) << "initialize TRDDigitQcTask" << ENDM; // QcInfoLogger is used. FairMQ logs will go to there as well.
 
   // this is how to get access to custom parameters defined in the config file at qc.tasks.<task_name>.taskParameters
   if (auto param = mCustomParameters.find("driftregionstart"); param != mCustomParameters.end()) {
@@ -187,25 +191,51 @@ void PulseHeightPerChamber::initialize(o2::framework::InitContext& /*ctx*/)
 
 }
 
-void PulseHeightPerChamber::startOfActivity(Activity& activity)
+void PulseHeightPerChamber::startOfActivity(Activity& /*activity*/)
 {
-  ILOG(Info) << "startOfActivity " << ENDM;
-}
+  ILOG(Info) << "startOfActivity" << ENDM;
+} // set stats/stacs
 
 void PulseHeightPerChamber::startOfCycle()
 {
   ILOG(Info) << "startOfCycle" << ENDM;
 }
 
+/* bool digitIndexCompare(unsigned int A, unsigned int B, const std::vector<o2::trd::Digit>& originalDigits)
+{
+  // sort into ROC:padrow
+  const o2::trd::Digit *a, *b;
+  a = &originalDigits[A];
+  b = &originalDigits[B];
+  if (a->getDetector() < b->getDetector()) {
+    return 1;
+  }
+  if (a->getDetector() > b->getDetector()) {
+    return 0;
+  }
+  if (a->getPadRow() < b->getPadRow()) {
+    return 1;
+  }
+  if (a->getPadRow() > b->getPadRow()) {
+    return 0;
+  }
+  if (a->getPadCol() < b->getPadCol()) {
+    return 1;
+  }
+   return 0;
+   }*/
+
 bool PulseHeightPerChamber::isChamberToBeIgnored(unsigned int sm, unsigned int stack, unsigned int layer)
 {
   // just to make the calling method a bit cleaner
   return mChambersToIgnoreBP.test(sm * o2::trd::constants::NLAYER * o2::trd::constants::NSTACK + stack * o2::trd::constants::NLAYER + layer);
 }
+
 void PulseHeightPerChamber::monitorData(o2::framework::ProcessingContext& ctx)
 {
   for (auto&& input : ctx.inputs()) {
     if (input.header != nullptr && input.payload != nullptr) {
+      
 
       auto digits = ctx.inputs().get<gsl::span<o2::trd::Digit>>("digits");
       std::vector<o2::trd::Digit> digitv(digits.begin(), digits.end());
@@ -222,9 +252,11 @@ void PulseHeightPerChamber::monitorData(o2::framework::ProcessingContext& ctx)
         uint64_t numtracklets = trigger.getNumberOfTracklets();
         uint64_t numdigits = trigger.getNumberOfDigits();
         if (trigger.getNumberOfDigits() == 0)
-          continue; // bail if we have no digits in this trigge
+          continue; // bail if we have no digits in this trigger
+        // now sort digits to det,row,pad
+	// std::sort(std::begin(digitsIndex) + trigger.getFirstDigit(), std::begin(digitsIndex) + trigger.getFirstDigit() + trigger.getNumberOfDigits(),[&digitv](unsigned int i, unsigned int j) { return digitIndexCompare(i, j, digitv); });
 
-	///////////////////////////////////////////////////
+        ///////////////////////////////////////////////////
         // Go through all chambers (using digits)
         const int adcThresh = 13;
         const int clsCutoff = 1000;
@@ -271,8 +303,7 @@ void PulseHeightPerChamber::monitorData(o2::framework::ProcessingContext& ctx)
           if (stack >= 2)
             stackoffset -= 4; // account for stack 2 having 4 less.
           // for now the if statement is commented as there is a problem finding isShareDigit, will come back to that.
-          ///if (!digits[digitsIndex[currentdigit]].isSharedDigit() && !mSkipSharedDigits.second) {
-          
+	  //  if (!digits[digitsIndex[currentdigit]].isSharedDigit() && !mSkipSharedDigits.second) {
           // after updating the 2 above histograms the first and last digits are of no use, as we are looking for 3 neighbouring digits after this.
 
           auto adcs = digits[digitsIndex[currentdigit]].getADC();
@@ -288,8 +319,13 @@ void PulseHeightPerChamber::monitorData(o2::framework::ProcessingContext& ctx)
           auto [det2, row2, col2] = ba;
           auto [det3, row3, col3] = ca;
           // do we have 3 digits next to each other:
-         
+          // check we 3 consecutive adc
+          bool consecutive = false;
+          if (det1 == det2 && det2 == det3 && row1 == row2 && row2 == row3 && col1 + 1 == col2 && col2 + 1 == col3) {
+            consecutive = true;
+          }
           // illumination
+	  //mNClsLayer[layer]->Fill(sm - 0.5 + col / 144., startRow[stack] + row);
           int digitindex = digitsIndex[currentdigit];
           int digitindexbelow = digitsIndex[currentdigit - 1];
           int digitindexabove = digitsIndex[currentdigit + 1];
@@ -300,8 +336,20 @@ void PulseHeightPerChamber::monitorData(o2::framework::ProcessingContext& ctx)
           uint32_t suma = before->getADCsum();
           uint32_t sumb = mid->getADCsum();
           uint32_t sumc = after->getADCsum();
-          if (!isChamberToBeIgnored(sm, stack, layer)) {
-            if (det1 == det2 && det2 == det3 && row1 == row2 && row2 == row3 && col1 + 1 == col2 && col2 + 1 == col3) {
+
+	    if (!isChamberToBeIgnored(sm, stack, layer)) {
+	     if (consecutive) {
+                    int phVal = 0;
+                    for (int tb = 0; tb < 30; tb++) {
+                      phVal = (mid->getADC()[tb] + before->getADC()[tb] + after->getADC()[tb]);
+		      mPulseHeightpro_conc->Fill(tb, phVal);
+                      //mPulseHeightPerChamber_1D[det1]->Fill(tb, phVal);
+                    }
+                  }
+                }
+
+         if (!isChamberToBeIgnored(sm, stack, layer)) {
+	   //  if (consecutive) {
               if (sumb > suma && sumb > sumc) {
                 if (suma > sumc) {
                   tbmax = sumb;
@@ -311,9 +359,27 @@ void PulseHeightPerChamber::monitorData(o2::framework::ProcessingContext& ctx)
                     int phVal = 0;
                     for (int tb = 0; tb < 30; tb++) {
                       phVal = (mid->getADC()[tb] + before->getADC()[tb] + after->getADC()[tb]);
-                      // TODO do we have a corresponding tracklet?
-                      mPulseHeight->Fill(tb, phVal);
-                      mPulseHeightpro->Fill(tb, phVal);                    
+		      mPulseHeightpro_ths->Fill(tb, phVal);
+                      //mPulseHeightPerChamber_1D[det1]->Fill(tb, phVal);
+                    }
+                  }
+                }  
+              } // end else
+	      // }   // end if 3 pads next to each other
+          }
+          if (!isChamberToBeIgnored(sm, stack, layer)) {
+            if (consecutive) {
+              if (sumb > suma && sumb > sumc) {
+                if (suma > sumc) {
+                  tbmax = sumb;
+                  tbhi = suma;
+                  tblo = sumc;
+                  if (tblo > mPulseHeightThreshold) {
+                    int phVal = 0;
+                    for (int tb = 0; tb < 30; tb++) {
+                      phVal = (mid->getADC()[tb] + before->getADC()[tb] + after->getADC()[tb]);
+		      mPulseHeightpro->Fill(tb, phVal);
+                      //mPulseHeightPerChamber_1D[det1]->Fill(tb, phVal);
                     }
                   }
                 } else {
@@ -324,23 +390,31 @@ void PulseHeightPerChamber::monitorData(o2::framework::ProcessingContext& ctx)
                     int phVal = 0;
                     for (int tb = 0; tb < 30; tb++) {
                       phVal = (mid->getADC()[tb] + before->getADC()[tb] + after->getADC()[tb]);
-                      mPulseHeight->Fill(tb, phVal);                    
-                      mPulseHeightpro->Fill(tb, phVal);
+		      mPulseHeightpro->Fill(tb, phVal);
                     }
                   }
                 }
               } // end else
-            }   // end if 3 pads next to each other
+	       }   // end if 3 pads next to each other
           }     // end for c
         }
     }       // end for r
   } // end for d
   } // for loop over digits
-}
+} // loop over triggers
 
 void PulseHeightPerChamber::endOfCycle()
 {
   ILOG(Info) << "endOfCycle" << ENDM;
+  /* for (Int_t det = 0; det < 540; det++) {
+    mClsAmpCh->Fill(mClusterAmplitudeChamber->Integral(1, -1, det, det + 1)); //prof->GetBinContent(det));
+  }
+  double scale = mPulseHeight->GetEntries() / 30;
+  for (int i = 0; i < 30; ++i)
+    mPulseHeightScaled->SetBinContent(i, mPulseHeight->GetBinContent(i));
+  mPulseHeightScaled->Scale(1 / scale);
+
+  mClsChargeTbCycle.get()->Reset();*/
 }
 
 void PulseHeightPerChamber::endOfActivity(Activity& /*activity*/)
@@ -352,11 +426,16 @@ void PulseHeightPerChamber::reset()
 {
   // clean all the monitor objects here
   ILOG(Info) << "Resetting the histogram" << ENDM;
- 
-  mDigitsPerEvent.get()->Reset();
-  mPulseHeight.get()->Reset();
-  mPulseHeightpro.get()->Reset();
-  mDigitsSizevsTrackletSize.get()->Reset();
-}
+  mDigitsPerEvent->Reset();
+  //mDigitHCID->Reset();
+  //mTotalPulseHeight2D->Reset();
+  //mPulseHeight->Reset();
 
+  mDigitsPerEvent.get()->Reset();
+  mPulseHeightpro.get()->Reset();
+  mPulseHeightpro_conc.get()->Reset();
+  mPulseHeightpro_ths.get()->Reset();
+  
+  //  }; // ph2DSM;
+}
 } // namespace o2::quality_control_modules::trd

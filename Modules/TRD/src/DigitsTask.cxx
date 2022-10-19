@@ -80,7 +80,7 @@ void DigitsTask::buildChamberIgnoreBP()
   }
 }
 
-void DigitsTask::drawTrdLayersGrid(TH2F* hist)
+  void DigitsTask::drawTrdLayersGrid(TH2F* hist)
 {
   TLine* line;
   for (int i = 0; i < 5; ++i) {
@@ -121,7 +121,7 @@ void DigitsTask::drawTrdLayersGrid(TH2F* hist)
 
   ILOG(Info, Support) << "Layer Grid redrawn in check for : " << hist->GetName() << ENDM;
   ILOG(Info, Support) << "Layer Grid redrawn in hist has function count of :  " << hist->GetListOfFunctions()->GetSize() << ENDM;
-}
+  }
 
 void DigitsTask::drawLinesMCM(TH2F* histo)
 {
@@ -153,7 +153,7 @@ void DigitsTask::drawLinesOnPulseHeight(TH1F* h)
   h->GetListOfFunctions()->Add(lmax);
 }
 
-void DigitsTask::drawHashOnLayers(int layer, int hcid, int col, int rowstart, int rowend)
+  void DigitsTask::drawHashOnLayers(int layer, int hcid, int col, int rowstart, int rowend)
 {
   //instead of using overlays, draw a simple box in red with a cross on it.
   std::pair<float, float> topright, bottomleft; //coordinates of box
@@ -179,9 +179,9 @@ void DigitsTask::drawHashOnLayers(int layer, int hcid, int col, int rowstart, in
     boxlines[line]->SetLineColor(kBlack);
     mLayers[layer]->GetListOfFunctions()->Add(boxlines[line]);
   }
-}
+  }
 
-void DigitsTask::fillLinesOnHistsPerLayer(int iLayer)
+   void DigitsTask::fillLinesOnHistsPerLayer(int iLayer)
 {
   std::bitset<1080> hciddone;
   hciddone.reset();
@@ -205,7 +205,7 @@ void DigitsTask::fillLinesOnHistsPerLayer(int iLayer)
       }
     }
   }
-}
+  }
 
 void DigitsTask::buildHistograms()
 {
@@ -377,7 +377,7 @@ void DigitsTask::buildHistograms()
       cn = 0;
   }
 */
-  for (int iLayer = 0; iLayer < 6; ++iLayer) {
+    for (int iLayer = 0; iLayer < 6; ++iLayer) {
     mLayers.push_back(new TH2F(Form("DigitsPerLayer/layer%i", iLayer), Form("Digit count per pad in layer %i;stack;sector", iLayer), 76, -0.5, 75.5, 2592, -0.5, 2591.5));
     auto xax = mLayers.back()->GetXaxis();
     xax->SetBinLabel(8, "0");
@@ -405,7 +405,7 @@ void DigitsTask::buildHistograms()
     getObjectsManager()->startPublishing(mLayers.back());
     getObjectsManager()->setDefaultDrawOptions(mLayers.back()->GetName(), "COLZ");
     getObjectsManager()->setDisplayHint(mLayers.back(), "logz");
-  }
+    }
 }
 
 void DigitsTask::initialize(o2::framework::InitContext& /*ctx*/)
@@ -501,7 +501,7 @@ bool digitIndexCompare(unsigned int A, unsigned int B, const std::vector<o2::trd
     return 1;
   }
   return 0;
-}
+  }
 bool DigitsTask::isChamberToBeIgnored(unsigned int sm, unsigned int stack, unsigned int layer)
 {
   // just to make the calling method a bit cleaner
@@ -530,8 +530,7 @@ void DigitsTask::monitorData(o2::framework::ProcessingContext& ctx)
         if (trigger.getNumberOfDigits() == 0)
           continue; // bail if we have no digits in this trigger
         // now sort digits to det,row,pad
-        std::sort(std::begin(digitsIndex) + trigger.getFirstDigit(), std::begin(digitsIndex) + trigger.getFirstDigit() + trigger.getNumberOfDigits(),
-                  [&digitv](unsigned int i, unsigned int j) { return digitIndexCompare(i, j, digitv); });
+	  std::sort(std::begin(digitsIndex) + trigger.getFirstDigit(), std::begin(digitsIndex) + trigger.getFirstDigit() + trigger.getNumberOfDigits(),[&digitv](unsigned int i, unsigned int j) { return digitIndexCompare(i, j, digitv); });
 
         ///////////////////////////////////////////////////
         // Go through all chambers (using digits)
@@ -581,11 +580,11 @@ void DigitsTask::monitorData(o2::framework::ProcessingContext& ctx)
             stackoffset -= 4; // account for stack 2 having 4 less.
           // for now the if statement is commented as there is a problem finding isShareDigit, will come back to that.
           ///if (!digits[digitsIndex[currentdigit]].isSharedDigit() && !mSkipSharedDigits.second) {
-          int rowGlb = stack < 3 ? digits[digitsIndex[currentdigit]].getPadRow() + stack * 16 : digits[digitsIndex[currentdigit]].getPadRow() + 44 + (stack - 3) * 16; // pad row within whole sector
+	   int rowGlb = stack < 3 ? digits[digitsIndex[currentdigit]].getPadRow() + stack * 16 : digits[digitsIndex[currentdigit]].getPadRow() + 44 + (stack - 3) * 16; // pad row within whole sector
           int colGlb = digits[digitsIndex[currentdigit]].getPadCol() + sm * 144;                                                                                       // pad column number from 0 to NSectors * 144
           mLayers[layer]->Fill(rowGlb, colGlb);
           //}
-          mHCMCM[sm]->Fill(digits[digitsIndex[currentdigit]].getPadRow() + stackoffset, digits[digitsIndex[currentdigit]].getPadCol());
+	   mHCMCM[sm]->Fill(digits[digitsIndex[currentdigit]].getPadRow() + stackoffset, digits[digitsIndex[currentdigit]].getPadCol());
           mDigitHCID->Fill(digits[digitsIndex[currentdigit]].getHCId());
           // after updating the 2 above histograms the first and last digits are of no use, as we are looking for 3 neighbouring digits after this.
 
@@ -608,11 +607,11 @@ void DigitsTask::monitorData(o2::framework::ProcessingContext& ctx)
             consecutive = true;
           }
           // illumination
-          mNClsLayer[layer]->Fill(sm - 0.5 + col / 144., startRow[stack] + row);
+	  mNClsLayer[layer]->Fill(sm - 0.5 + col / 144., startRow[stack] + row);
           int digitindex = digitsIndex[currentdigit];
           int digitindexbelow = digitsIndex[currentdigit - 1];
           int digitindexabove = digitsIndex[currentdigit + 1];
-          for (int time = 1; time < o2::trd::constants::TIMEBINS - 1; ++time) {
+	   for (int time = 1; time < o2::trd::constants::TIMEBINS - 1; ++time) {
             int value = digits[digitsIndex[currentdigit]].getADC()[time];
             if (value > adcThresh)
               nADChigh++;
