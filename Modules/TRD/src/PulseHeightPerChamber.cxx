@@ -201,7 +201,7 @@ void PulseHeightPerChamber::startOfCycle()
   ILOG(Info) << "startOfCycle" << ENDM;
 }
 
-/* bool digitIndexCompare(unsigned int A, unsigned int B, const std::vector<o2::trd::Digit>& originalDigits)
+bool digitIndexCompare_PH(unsigned int A, unsigned int B, const std::vector<o2::trd::Digit>& originalDigits)
 {
   // sort into ROC:padrow
   const o2::trd::Digit *a, *b;
@@ -223,7 +223,7 @@ void PulseHeightPerChamber::startOfCycle()
     return 1;
   }
    return 0;
-   }*/
+   }
 
 bool PulseHeightPerChamber::isChamberToBeIgnored(unsigned int sm, unsigned int stack, unsigned int layer)
 {
@@ -254,7 +254,7 @@ void PulseHeightPerChamber::monitorData(o2::framework::ProcessingContext& ctx)
         if (trigger.getNumberOfDigits() == 0)
           continue; // bail if we have no digits in this trigger
         // now sort digits to det,row,pad
-	// std::sort(std::begin(digitsIndex) + trigger.getFirstDigit(), std::begin(digitsIndex) + trigger.getFirstDigit() + trigger.getNumberOfDigits(),[&digitv](unsigned int i, unsigned int j) { return digitIndexCompare(i, j, digitv); });
+	 std::sort(std::begin(digitsIndex) + trigger.getFirstDigit(), std::begin(digitsIndex) + trigger.getFirstDigit() + trigger.getNumberOfDigits(),[&digitv](unsigned int i, unsigned int j) { return digitIndexCompare_PH(i, j, digitv); });
 
         ///////////////////////////////////////////////////
         // Go through all chambers (using digits)

@@ -20,6 +20,7 @@
 #include "QualityControl/TaskInterface.h"
 #include <array>
 #include "DataFormatsTRD/NoiseCalibration.h"
+#include "DataFormatsTRD/Digit.h"
 #include "TRDQC/StatusHelper.h"
 
 class TH1F;
@@ -62,7 +63,7 @@ class PulseHeightPerChamber final : public TaskInterface
   void drawHashOnLayers(int layer, int hcid, int col, int rowstart, int rowend);
   void buildChamberIgnoreBP();
   bool isChamberToBeIgnored(unsigned int sm, unsigned int stack, unsigned int layer);
-
+  // bool digitIndexCompare(unsigned int A, unsigned int B, const std::vector<o2::trd::Digit>& originalDigits);
  private:
   //limits
   bool mSkipSharedDigits;
